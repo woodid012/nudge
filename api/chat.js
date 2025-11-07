@@ -16,7 +16,24 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { message, apiKey, provider, history, context } = req.body;
+        const { message, provider, history, context } = req.body;
+
+        // Get API keys from environment variables
+        const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+        const openaiApiKey = process.env.OPENAI_API_KEY;
+
+        // Use provider from request or default to anthropic if env var is set
+        let selectedProvider = provider;
+        if (!selectedProvider) {
+            selectedProvider = anthropicApiKey ? 'anthropic' : 'openai';
+        }
+
+        // Validate API key is available
+        const apiKey = selectedProvider === 'anthropic' ? anthropicApiKey : openaiApiKey;
+        if (!apiKey) {
+            res.status(500).json({ error: `${selectedProvider === 'anthropic' ? 'ANTHROPIC' : 'OPENAI'}_API_KEY environment variable not set` });
+            return;
+        }
 
         // Build context string
         let contextInfo = '';
@@ -32,7 +49,7 @@ export default async function handler(req, res) {
 
         let apiUrl, headers, requestBody;
 
-        if (provider === 'anthropic') {
+        if (selectedProvider === 'anthropic') {
             apiUrl = 'https://api.anthropic.com/v1/messages';
             headers = {
                 'Content-Type': 'application/json',

@@ -51,49 +51,6 @@
             opacity: 0.9;
         }
 
-        .api-setup {
-            padding: 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .api-setup.hidden {
-            display: none;
-        }
-
-        .api-setup input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .api-setup button {
-            width: 100%;
-            padding: 10px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .api-setup button:hover {
-            background: #5568d3;
-        }
-
-        .api-setup select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
 
         .chat-messages {
             flex: 1;
@@ -234,22 +191,6 @@
             }
         }
 
-        .settings-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        .settings-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
 
         .new-nudge-btn {
             padding: 12px 24px;
@@ -275,23 +216,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <button class="settings-btn" onclick="toggleSettings()">⚙️ API</button>
             <h1>Nudge</h1>
             <p>Your concise AI decision maker</p>
         </div>
 
-        <div class="api-setup" id="apiSetup">
-            <select id="apiProvider">
-                <option value="anthropic">Anthropic (Claude)</option>
-                <option value="openai">OpenAI (GPT-4)</option>
-            </select>
-            <input type="password" id="apiKey" placeholder="Enter your API key" />
-            <button onclick="saveApiKey()">Save & Start</button>
-            <p style="font-size: 12px; color: #666; margin-top: 10px;">
-                Get your API key from:
-                <a href="https://console.anthropic.com/" target="_blank" id="apiLink">Anthropic Console</a>
-            </p>
-        </div>
 
         <div class="chat-messages" id="chatMessages">
             <div class="message assistant">
@@ -312,8 +240,6 @@
     </div>
 
     <script>
-        let apiKey = localStorage.getItem('nudge_api_key');
-        let apiProvider = localStorage.getItem('nudge_api_provider') || 'anthropic';
         let conversationHistory = [];
         let responseCount = 0;
         const MAX_RESPONSES = 4;
@@ -334,45 +260,6 @@
                     console.log('Location not available:', error.message);
                 }
             );
-        }
-
-        // Update API provider selector and link
-        document.getElementById('apiProvider').value = apiProvider;
-        updateApiLink();
-
-        document.getElementById('apiProvider').addEventListener('change', function() {
-            apiProvider = this.value;
-            localStorage.setItem('nudge_api_provider', apiProvider);
-            updateApiLink();
-        });
-
-        function updateApiLink() {
-            const link = document.getElementById('apiLink');
-            if (apiProvider === 'anthropic') {
-                link.href = 'https://console.anthropic.com/';
-                link.textContent = 'Anthropic Console';
-            } else {
-                link.href = 'https://platform.openai.com/api-keys';
-                link.textContent = 'OpenAI Platform';
-            }
-        }
-
-        if (apiKey) {
-            document.getElementById('apiSetup').classList.add('hidden');
-        }
-
-        function toggleSettings() {
-            document.getElementById('apiSetup').classList.toggle('hidden');
-        }
-
-        function saveApiKey() {
-            const key = document.getElementById('apiKey').value.trim();
-            if (key) {
-                apiKey = key;
-                localStorage.setItem('nudge_api_key', key);
-                document.getElementById('apiSetup').classList.add('hidden');
-                addMessage('assistant', 'API key saved! Ready to help you make decisions.');
-            }
         }
 
         function addMessage(role, content) {
@@ -414,11 +301,6 @@
             const message = input.value.trim();
 
             if (!message) return;
-
-            if (!apiKey) {
-                addMessage('error', 'Please set your API key first using the settings button.');
-                return;
-            }
 
             // Check if we've hit the response limit
             if (responseCount >= MAX_RESPONSES) {
@@ -465,8 +347,6 @@
                             },
                             body: JSON.stringify({
                                 message: message,
-                                apiKey: apiKey,
-                                provider: apiProvider,
                                 history: conversationHistory.slice(-8),
                                 context: context
                             })
@@ -499,12 +379,17 @@
                         }
                     }
                 }
-                let reply;
 
-                if (apiProvider === 'anthropic') {
+                // Parse response based on which API responded
+                let reply;
+                if (data.content && data.content[0]) {
+                    // Anthropic response format
                     reply = data.content[0].text;
-                } else {
+                } else if (data.choices && data.choices[0]) {
+                    // OpenAI response format
                     reply = data.choices[0].message.content;
+                } else {
+                    throw new Error('Unexpected API response format');
                 }
 
                 // Add to conversation history and increment count
