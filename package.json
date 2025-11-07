@@ -1,0 +1,13 @@
+{
+  "name": "nudge-ai",
+  "version": "1.0.0",
+  "description": "Nudge - Concise AI decision maker",
+  "scripts": {
+    "dev": "node server.js",
+    "vercel-build": "echo 'No build step required'"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "dependencies": {}
+}

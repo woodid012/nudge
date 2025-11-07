@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nudge - Concise AI Decisions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 600px;
+            height: 700px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .api-setup {
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .api-setup.hidden {
+            display: none;
+        }
+
+        .api-setup input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .api-setup button {
+            width: 100%;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .api-setup button:hover {
+            background: #5568d3;
+        }
+
+        .api-setup select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.5;
+            font-size: 15px;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message.assistant .message-content {
+            background: #f1f3f4;
+            color: #333;
+        }
+
+        .message.error .message-content {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            background: white;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-wrapper input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-wrapper input:focus {
+            border-color: #667eea;
+        }
+
+        .input-wrapper button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .input-wrapper button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        .input-wrapper button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: #f1f3f4;
+            border-radius: 18px;
+            max-width: 75px;
+        }
+
+        .typing-indicator.active {
+            display: block;
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .new-nudge-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .new-nudge-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="settings-btn" onclick="toggleSettings()">⚙️ API</button>
+            <h1>Nudge</h1>
+            <p>Your concise AI decision maker</p>
+        </div>
+
+        <div class="api-setup" id="apiSetup">
+            <select id="apiProvider">
+                <option value="anthropic">Anthropic (Claude)</option>
+                <option value="openai">OpenAI (GPT-4)</option>
+            </select>
+            <input type="password" id="apiKey" placeholder="Enter your API key" />
+            <button onclick="saveApiKey()">Save & Start</button>
+            <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                Get your API key from:
+                <a href="https://console.anthropic.com/" target="_blank" id="apiLink">Anthropic Console</a>
+            </p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message assistant">
+                <div class="message-content">
+                    Hey! I'm Nudge. Ask me anything and I'll give you a straight, concise answer or help you make a decision. No fluff, just clarity.
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <input type="text" id="userInput" placeholder="Ask anything or need a decision?"
+                       onkeypress="if(event.key === 'Enter') sendMessage()" />
+                <button onclick="sendMessage()" id="sendBtn">Send</button>
+                <button onclick="newNudge()" id="newNudgeBtn" class="new-nudge-btn hidden">New Nudge</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let apiKey = localStorage.getItem('nudge_api_key');
+        let apiProvider = localStorage.getItem('nudge_api_provider') || 'anthropic';
+        let conversationHistory = [];
+        let responseCount = 0;
+        const MAX_RESPONSES = 4;
+        let userLocation = null;
+
+        // Get user's location
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        timestamp: new Date().toISOString()
+                    };
+                    console.log('Location captured:', userLocation);
+                },
+                (error) => {
+                    console.log('Location not available:', error.message);
+                }
+            );
+        }
+
+        // Update API provider selector and link
+        document.getElementById('apiProvider').value = apiProvider;
+        updateApiLink();
+
+        document.getElementById('apiProvider').addEventListener('change', function() {
+            apiProvider = this.value;
+            localStorage.setItem('nudge_api_provider', apiProvider);
+            updateApiLink();
+        });
+
+        function updateApiLink() {
+            const link = document.getElementById('apiLink');
+            if (apiProvider === 'anthropic') {
+                link.href = 'https://console.anthropic.com/';
+                link.textContent = 'Anthropic Console';
+            } else {
+                link.href = 'https://platform.openai.com/api-keys';
+                link.textContent = 'OpenAI Platform';
+            }
+        }
+
+        if (apiKey) {
+            document.getElementById('apiSetup').classList.add('hidden');
+        }
+
+        function toggleSettings() {
+            document.getElementById('apiSetup').classList.toggle('hidden');
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('apiKey').value.trim();
+            if (key) {
+                apiKey = key;
+                localStorage.setItem('nudge_api_key', key);
+                document.getElementById('apiSetup').classList.add('hidden');
+                addMessage('assistant', 'API key saved! Ready to help you make decisions.');
+            }
+        }
+
+        function addMessage(role, content) {
+            const messagesDiv = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+
+            messageDiv.appendChild(contentDiv);
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function showTyping() {
+            const messagesDiv = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message assistant';
+            typingDiv.id = 'typingIndicator';
+
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator active';
+            indicator.innerHTML = '<span></span><span></span><span></span>';
+
+            typingDiv.appendChild(indicator);
+            messagesDiv.appendChild(typingDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function hideTyping() {
+            const typing = document.getElementById('typingIndicator');
+            if (typing) typing.remove();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            if (!apiKey) {
+                addMessage('error', 'Please set your API key first using the settings button.');
+                return;
+            }
+
+            // Check if we've hit the response limit
+            if (responseCount >= MAX_RESPONSES) {
+                input.value = '';
+                addMessage('user', message);
+                addMessage('assistant', "I think I've given you enough of a nudge here.");
+
+                // Replace Send button with New Nudge button
+                document.getElementById('sendBtn').classList.add('hidden');
+                document.getElementById('newNudgeBtn').classList.remove('hidden');
+                return;
+            }
+
+            input.value = '';
+            addMessage('user', message);
+
+            // Add to conversation history
+            conversationHistory.push({ role: 'user', content: message });
+
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            showTyping();
+
+            try {
+                // Get current date/time
+                const now = new Date();
+                const context = {
+                    date: now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                    time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    location: userLocation
+                };
+
+                let response;
+                let data;
+                const maxRetries = 3;
+
+                for (let attempt = 0; attempt < maxRetries; attempt++) {
+                    try {
+                        response = await fetch('/api/chat', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                message: message,
+                                apiKey: apiKey,
+                                provider: apiProvider,
+                                history: conversationHistory.slice(-8),
+                                context: context
+                            })
+                        });
+
+                        data = await response.json();
+
+                        if (!response.ok) {
+                            // Check if it's an overload error
+                            if (data.error && (data.error.includes('overload') || data.error.includes('Overloaded'))) {
+                                if (attempt < maxRetries - 1) {
+                                    const waitTime = Math.pow(2, attempt) * 2;
+                                    hideTyping();
+                                    addMessage('assistant', `API busy, retrying in ${waitTime}s...`);
+                                    await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
+                                    // Remove the retry message before next attempt
+                                    const messages = document.getElementById('chatMessages');
+                                    messages.removeChild(messages.lastChild);
+                                    showTyping();
+                                    continue;
+                                }
+                            }
+                            throw new Error(data.error || 'API request failed');
+                        }
+
+                        break; // Success, exit retry loop
+                    } catch (fetchError) {
+                        if (attempt === maxRetries - 1) {
+                            throw fetchError;
+                        }
+                    }
+                }
+                let reply;
+
+                if (apiProvider === 'anthropic') {
+                    reply = data.content[0].text;
+                } else {
+                    reply = data.choices[0].message.content;
+                }
+
+                // Add to conversation history and increment count
+                conversationHistory.push({ role: 'assistant', content: reply });
+                responseCount++;
+
+                hideTyping();
+                addMessage('assistant', reply);
+
+                // Show New Nudge button after response
+                // If we've hit the limit, replace Send button, otherwise show both
+                if (responseCount >= MAX_RESPONSES) {
+                    document.getElementById('sendBtn').classList.add('hidden');
+                    document.getElementById('newNudgeBtn').classList.remove('hidden');
+                } else {
+                    document.getElementById('newNudgeBtn').classList.remove('hidden');
+                }
+            } catch (error) {
+                hideTyping();
+                addMessage('error', `Error: ${error.message}`);
+                console.error('Full error:', error);
+            } finally {
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        function newNudge() {
+            // Clear conversation history and reset count
+            conversationHistory = [];
+            responseCount = 0;
+
+            // Clear chat messages except the initial greeting
+            const messagesDiv = document.getElementById('chatMessages');
+            messagesDiv.innerHTML = `
+                <div class="message assistant">
+                    <div class="message-content">
+                        Hey! I'm Nudge. Ask me anything and I'll give you a straight, concise answer or help you make a decision. No fluff, just clarity.
+                    </div>
+                </div>
+            `;
+
+            // Reset buttons
+            document.getElementById('sendBtn').classList.remove('hidden');
+            document.getElementById('newNudgeBtn').classList.add('hidden');
+            document.getElementById('userInput').focus();
+        }
+    </script>
+</body>
+</html>
