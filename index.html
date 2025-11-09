@@ -228,11 +228,16 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.2s, opacity 0.3s;
         }
 
-        .new-nudge-btn:hover {
+        .new-nudge-btn:hover:not(:disabled) {
             transform: scale(1.05);
+        }
+
+        .new-nudge-btn:disabled {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            cursor: not-allowed;
         }
 
         .hidden {
@@ -393,7 +398,80 @@
         let conversationHistory = [];
         let responseCount = 0;
         const MAX_RESPONSES = 3;
+        const MAX_DAILY_NUDGES = 3;
         let userLocation = null;
+
+        // Daily nudge tracking
+        function getDailyNudgeData() {
+            const today = new Date().toDateString();
+            const stored = localStorage.getItem('nudgeData');
+
+            if (stored) {
+                const data = JSON.parse(stored);
+                // Reset if it's a new day
+                if (data.date !== today) {
+                    return { date: today, count: 0 };
+                }
+                return data;
+            }
+            return { date: today, count: 0 };
+        }
+
+        function incrementDailyNudgeCount() {
+            const data = getDailyNudgeData();
+            data.count++;
+            localStorage.setItem('nudgeData', JSON.stringify(data));
+            updateNewNudgeButton();
+        }
+
+        function getRemainingNudges() {
+            const data = getDailyNudgeData();
+            return Math.max(0, MAX_DAILY_NUDGES - data.count);
+        }
+
+        function updateNewNudgeButton() {
+            const remaining = getRemainingNudges();
+            const btn = document.getElementById('newNudgeBtn');
+
+            if (remaining > 0) {
+                btn.textContent = `New Nudge (${remaining} left today)`;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            } else {
+                btn.textContent = 'Daily limit reached';
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+            }
+        }
+
+        // Initialize on page load - count this as a new nudge session
+        window.addEventListener('load', function() {
+            // Check if this is a page reload or fresh visit
+            const sessionStarted = sessionStorage.getItem('nudgeSessionStarted');
+
+            if (!sessionStarted) {
+                // This is a fresh session, count it as a nudge
+                if (getRemainingNudges() > 0) {
+                    incrementDailyNudgeCount();
+                    sessionStorage.setItem('nudgeSessionStarted', 'true');
+                } else {
+                    // User has hit daily limit
+                    const messagesDiv = document.getElementById('chatMessages');
+                    messagesDiv.innerHTML = `
+                        <div class="message assistant">
+                            <div class="message-content">
+                                You've reached your daily limit of ${MAX_DAILY_NUDGES} nudges. Come back tomorrow for more decisions!
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('userInput').disabled = true;
+                    document.getElementById('sendBtn').disabled = true;
+                }
+            }
+            updateNewNudgeButton();
+        });
 
         // Get user's location
         if (navigator.geolocation) {
@@ -602,6 +680,24 @@
         }
 
         function newNudge() {
+            // Check if user has remaining nudges
+            if (getRemainingNudges() <= 0) {
+                const messagesDiv = document.getElementById('chatMessages');
+                messagesDiv.innerHTML = `
+                    <div class="message assistant">
+                        <div class="message-content">
+                            You've reached your daily limit of ${MAX_DAILY_NUDGES} nudges. Come back tomorrow for more decisions!
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Increment the daily nudge count and create new session
+            incrementDailyNudgeCount();
+            sessionStorage.removeItem('nudgeSessionStarted');
+            sessionStorage.setItem('nudgeSessionStarted', 'true');
+
             // Clear conversation history and reset count
             conversationHistory = [];
             responseCount = 0;
