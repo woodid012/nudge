@@ -101,18 +101,22 @@
         }
 
         .ad-link {
+            display: block;
             margin-top: 8px;
             padding: 8px 12px;
             background: #fff3cd;
             border-left: 3px solid #ffc107;
             border-radius: 4px;
             font-size: 13px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .ad-link a {
             color: #856404;
             text-decoration: none;
             font-weight: 600;
+            display: inline-block;
         }
 
         .ad-link a:hover {
@@ -120,6 +124,7 @@
         }
 
         .ad-label {
+            display: block;
             font-size: 10px;
             color: #856404;
             text-transform: uppercase;
@@ -509,12 +514,14 @@
                 const adText = adParts[0].trim();
                 const searchTerm = adParts[1] ? adParts[1].trim() : adText;
 
-                // Set main content
-                contentDiv.textContent = mainContent;
+                // Create main text node
+                const textNode = document.createTextNode(mainContent);
+                contentDiv.appendChild(textNode);
 
                 // Create ad link
                 const adDiv = document.createElement('div');
                 adDiv.className = 'ad-link';
+                adDiv.style.display = 'block'; // Explicitly set display
 
                 const adLabel = document.createElement('div');
                 adLabel.className = 'ad-label';
@@ -529,6 +536,8 @@
                 adDiv.appendChild(adLabel);
                 adDiv.appendChild(adLink);
                 contentDiv.appendChild(adDiv);
+
+                console.log('Ad created:', { adText, searchTerm, adDiv }); // Debug log
             } else {
                 contentDiv.textContent = content;
             }
