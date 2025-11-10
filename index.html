@@ -252,31 +252,38 @@
         /* Mobile-friendly responsive styles */
         @media screen and (max-width: 768px) {
             body {
-                padding: 10px;
+                padding: 0;
                 height: 100vh;
+                height: 100dvh; /* Dynamic viewport height for all mobile browsers (Safari, Chrome, etc.) */
             }
 
             .container {
                 max-width: 100%;
                 height: 100%;
-                border-radius: 12px;
+                max-height: 100vh;
+                max-height: 100dvh; /* Dynamic viewport height for all mobile browsers (Safari, Chrome, etc.) */
+                border-radius: 0;
             }
 
             .header {
-                padding: 20px 15px;
+                padding: 15px;
+                flex-shrink: 0;
             }
 
             .header h1 {
-                font-size: 24px;
+                font-size: 22px;
+                margin-bottom: 3px;
             }
 
             .header p {
-                font-size: 13px;
+                font-size: 12px;
             }
 
             .chat-messages {
-                padding: 15px;
-                gap: 12px;
+                padding: 12px;
+                gap: 10px;
+                flex: 1;
+                min-height: 0; /* Important for proper flex behavior */
             }
 
             .message-content {
@@ -286,7 +293,8 @@
             }
 
             .input-area {
-                padding: 15px;
+                padding: 12px;
+                flex-shrink: 0;
             }
 
             .input-wrapper {
@@ -296,17 +304,17 @@
 
             .input-wrapper input {
                 padding: 10px 14px;
-                font-size: 14px;
+                font-size: 16px; /* Prevents zoom on iOS */
             }
 
             .input-wrapper button {
-                padding: 10px 18px;
+                padding: 10px 16px;
                 font-size: 14px;
                 white-space: nowrap;
             }
 
             .new-nudge-btn {
-                padding: 10px 18px;
+                padding: 10px 16px;
                 font-size: 14px;
             }
 
@@ -321,16 +329,8 @@
         }
 
         @media screen and (max-width: 480px) {
-            body {
-                padding: 5px;
-            }
-
-            .container {
-                border-radius: 8px;
-            }
-
             .header {
-                padding: 15px 12px;
+                padding: 12px;
             }
 
             .header h1 {
@@ -338,12 +338,12 @@
             }
 
             .header p {
-                font-size: 12px;
+                font-size: 11px;
             }
 
             .chat-messages {
-                padding: 12px;
-                gap: 10px;
+                padding: 10px;
+                gap: 8px;
             }
 
             .message-content {
@@ -353,21 +353,21 @@
             }
 
             .input-area {
-                padding: 12px;
+                padding: 10px;
             }
 
             .input-wrapper input {
                 padding: 9px 12px;
-                font-size: 13px;
+                font-size: 16px; /* Prevents zoom on iOS */
             }
 
             .input-wrapper button {
-                padding: 9px 14px;
+                padding: 9px 12px;
                 font-size: 13px;
             }
 
             .new-nudge-btn {
-                padding: 9px 14px;
+                padding: 9px 12px;
                 font-size: 13px;
             }
         }
@@ -403,80 +403,7 @@
         let conversationHistory = [];
         let responseCount = 0;
         const MAX_RESPONSES = 3;
-        const MAX_DAILY_NUDGES = 3;
         let userLocation = null;
-
-        // Daily nudge tracking
-        function getDailyNudgeData() {
-            const today = new Date().toDateString();
-            const stored = localStorage.getItem('nudgeData');
-
-            if (stored) {
-                const data = JSON.parse(stored);
-                // Reset if it's a new day
-                if (data.date !== today) {
-                    return { date: today, count: 0 };
-                }
-                return data;
-            }
-            return { date: today, count: 0 };
-        }
-
-        function incrementDailyNudgeCount() {
-            const data = getDailyNudgeData();
-            data.count++;
-            localStorage.setItem('nudgeData', JSON.stringify(data));
-            updateNewNudgeButton();
-        }
-
-        function getRemainingNudges() {
-            const data = getDailyNudgeData();
-            return Math.max(0, MAX_DAILY_NUDGES - data.count);
-        }
-
-        function updateNewNudgeButton() {
-            const remaining = getRemainingNudges();
-            const btn = document.getElementById('newNudgeBtn');
-
-            if (remaining > 0) {
-                btn.textContent = `New Nudge (${remaining} left today)`;
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                btn.style.cursor = 'pointer';
-            } else {
-                btn.textContent = 'Daily limit reached';
-                btn.disabled = true;
-                btn.style.opacity = '0.5';
-                btn.style.cursor = 'not-allowed';
-            }
-        }
-
-        // Initialize on page load - count this as a new nudge session
-        window.addEventListener('load', function() {
-            // Check if this is a page reload or fresh visit
-            const sessionStarted = sessionStorage.getItem('nudgeSessionStarted');
-
-            if (!sessionStarted) {
-                // This is a fresh session, count it as a nudge
-                if (getRemainingNudges() > 0) {
-                    incrementDailyNudgeCount();
-                    sessionStorage.setItem('nudgeSessionStarted', 'true');
-                } else {
-                    // User has hit daily limit
-                    const messagesDiv = document.getElementById('chatMessages');
-                    messagesDiv.innerHTML = `
-                        <div class="message assistant">
-                            <div class="message-content">
-                                You've reached your daily limit of ${MAX_DAILY_NUDGES} nudges. Come back tomorrow for more decisions!
-                            </div>
-                        </div>
-                    `;
-                    document.getElementById('userInput').disabled = true;
-                    document.getElementById('sendBtn').disabled = true;
-                }
-            }
-            updateNewNudgeButton();
-        });
 
         // Get user's location
         if (navigator.geolocation) {
@@ -689,24 +616,6 @@
         }
 
         function newNudge() {
-            // Check if user has remaining nudges
-            if (getRemainingNudges() <= 0) {
-                const messagesDiv = document.getElementById('chatMessages');
-                messagesDiv.innerHTML = `
-                    <div class="message assistant">
-                        <div class="message-content">
-                            You've reached your daily limit of ${MAX_DAILY_NUDGES} nudges. Come back tomorrow for more decisions!
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-
-            // Increment the daily nudge count and create new session
-            incrementDailyNudgeCount();
-            sessionStorage.removeItem('nudgeSessionStarted');
-            sessionStorage.setItem('nudgeSessionStarted', 'true');
-
             // Clear conversation history and reset count
             conversationHistory = [];
             responseCount = 0;
