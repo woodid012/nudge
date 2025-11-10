@@ -100,38 +100,6 @@
             color: #333;
         }
 
-        .ad-link {
-            display: block;
-            margin-top: 8px;
-            padding: 8px 12px;
-            background: #fff3cd;
-            border-left: 3px solid #ffc107;
-            border-radius: 4px;
-            font-size: 13px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .ad-link a {
-            color: #856404;
-            text-decoration: none;
-            font-weight: 600;
-            display: inline-block;
-        }
-
-        .ad-link a:hover {
-            text-decoration: underline;
-        }
-
-        .ad-label {
-            display: block;
-            font-size: 10px;
-            color: #856404;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-            opacity: 0.8;
-        }
-
         .message.error .message-content {
             background: #fee;
             color: #c33;
@@ -317,15 +285,6 @@
                 padding: 10px 16px;
                 font-size: 14px;
             }
-
-            .ad-link {
-                font-size: 12px;
-                padding: 6px 10px;
-            }
-
-            .ad-label {
-                font-size: 9px;
-            }
         }
 
         @media screen and (max-width: 480px) {
@@ -429,45 +388,7 @@
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-
-            // Check if this is an assistant message with an AD
-            if (role === 'assistant' && content.includes('AD:')) {
-                const parts = content.split('AD:');
-                const mainContent = parts[0].trim();
-                const adPart = parts[1].trim();
-
-                // Parse ad part (format: "Product description|search term")
-                const adParts = adPart.split('|');
-                const adText = adParts[0].trim();
-                const searchTerm = adParts[1] ? adParts[1].trim() : adText;
-
-                // Create main text node
-                const textNode = document.createTextNode(mainContent);
-                contentDiv.appendChild(textNode);
-
-                // Create ad link
-                const adDiv = document.createElement('div');
-                adDiv.className = 'ad-link';
-                adDiv.style.display = 'block'; // Explicitly set display
-
-                const adLabel = document.createElement('div');
-                adLabel.className = 'ad-label';
-                adLabel.textContent = 'Sponsored';
-
-                const adLink = document.createElement('a');
-                adLink.href = `https://www.amazon.com/s?k=${encodeURIComponent(searchTerm)}`;
-                adLink.target = '_blank';
-                adLink.rel = 'noopener noreferrer';
-                adLink.textContent = adText;
-
-                adDiv.appendChild(adLabel);
-                adDiv.appendChild(adLink);
-                contentDiv.appendChild(adDiv);
-
-                console.log('Ad created:', { adText, searchTerm, adDiv }); // Debug log
-            } else {
-                contentDiv.textContent = content;
-            }
+            contentDiv.textContent = content;
 
             messageDiv.appendChild(contentDiv);
             messagesDiv.appendChild(messageDiv);
